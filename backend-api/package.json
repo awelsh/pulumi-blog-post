@@ -1,0 +1,39 @@
+{
+  "name": "open-voice-api",
+  "version": "1.0.0",
+  "description": "Serverless webpack example using Typescript",
+  "main": "handler.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {
+    "@types/jsonwebtoken": "^8.3.5",
+    "@types/jwk-to-pem": "^2.0.0",
+    "@types/request": "^2.48.3",
+    "@types/uuid": "^3.4.6",
+    "aws-sdk": "^2.552.0",
+    "jsonwebtoken": "^8.5.1",
+    "jwk-to-pem": "^2.0.1",
+    "request": "^2.88.0",
+    "@types/luxon": "^1.21.0",
+    "@types/node-fetch": "^2.5.4",
+    "node-fetch": "^2.6.0",
+    "luxon": "^1.21.2",
+    "source-map-support": "^0.5.10",
+    "uuid": "^3.3.3"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.17",
+    "@types/jest": "^24.0.22",
+    "@types/node": "^10.17.4",
+    "aws-sdk-mock": "^4.5.0",
+    "jest": "^24.9.0",
+    "serverless-webpack": "^5.3.1",
+    "ts-jest": "^24.1.0",
+    "ts-loader": "^5.3.3",
+    "typescript": "^3.7.2",
+    "webpack": "^4.29.0"
+  },
+  "author": "The serverless webpack authors (https://github.com/elastic-coders/serverless-webpack)",
+  "license": "MIT"
+}

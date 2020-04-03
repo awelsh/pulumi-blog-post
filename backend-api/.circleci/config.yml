@@ -1,0 +1,40 @@
+defaults_node: &defaults_node
+  working_directory: ~/backend-api
+  docker:
+    - image: circleci/node:10.16.3
+
+version: 2.1
+orbs:
+  pulumi: pulumi/pulumi@1.2.0
+jobs:
+  deploy_dev:
+    <<: *defaults_node
+    steps:
+      - checkout
+      - run:
+          command: npm install
+      - pulumi/login:
+          cloud-url: "s3://pulumi-blog-remote"
+      - run:
+          command: |
+            cd ~/backend-api/infrastructure
+            npm install
+      - pulumi/update:
+          stack: infrastructure.dev
+          working_directory: ~/backend-api/infrastructure
+      - run:
+          command: |
+            cd ~/backend-api/gateway
+            npm install
+      - pulumi/update:
+          stack: gateway.dev
+          working_directory: ~/backend-api/gateway
+workflows:
+  version: 2.1
+  test_and_deploy:
+    jobs:
+      - deploy_dev:
+          filters:
+            branches:
+              only:
+                - pulumi
