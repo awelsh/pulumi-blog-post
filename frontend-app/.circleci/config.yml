@@ -1,0 +1,87 @@
+defaults_node: &defaults_node
+  working_directory: ~/frontend-app
+  docker:
+    - image: circleci/node:10.16.3
+
+version: 2.1
+orbs:
+  aws-s3: circleci/aws-s3@1.0.0
+  pulumi: pulumi/pulumi@1.0.0
+jobs:
+  install:
+    <<: *defaults_node
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            cd ~/frontend-app/app
+            npm ci
+      - save_cache:
+          key: dependencies-cache-{{ checksum "app/package-lock.json" }}
+          paths:
+            - app/node_modules
+  build:
+    <<: *defaults_node
+    steps:
+      - checkout
+      - pulumi/login:
+          cloud-url: "s3://pulumi-blog-remote"
+      - run:
+          command: echo 'export APIURL=$(pulumi stack -s gateway.dev output apiUrl)' >> $BASH_ENV
+      - run:
+          name: "npm build"
+          environment: 
+          command: |
+            cd ~/frontend-app/app
+            npm install
+            echo ${APIURL}
+            REACT_APP_STAGE=$CIRCLE_BRANCH REACT_APP_LAMBDA_ENDPOINT=${APIURL} npx react-scripts build
+      - persist_to_workspace:
+          root: ~/frontend-app/app
+          paths:
+            - build
+            - package.json
+  provision_bucket:
+    <<: *defaults_node
+    steps:
+      - checkout
+      - run:
+          command: |
+            cd ~/frontend-app/frontend
+            npm install
+      - pulumi/login:
+          cloud-url: "s3://pulumi-blog-remote"
+      - pulumi/update:
+          stack: frontend.dev
+          working_directory: ~/frontend-app/frontend
+  deploy_pulumi:
+    working_directory: ~/frontend-app
+    docker:
+      - image: circleci/python:3.7.4
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/frontend-app
+      - aws-s3/sync:
+          from: build
+          to: s3://puluimi-blog-post-dev
+workflows:
+  version: 2.1
+  test_and_deploy:
+    jobs:
+      - install
+      - build:
+          requires:
+            - install
+      - provision_bucket:
+          requires:
+            - install
+      - deploy_pulumi:
+          requires:
+            - build
+            - provision_bucket
+          filters:
+            branches:
+              only:
+                - pulumi
