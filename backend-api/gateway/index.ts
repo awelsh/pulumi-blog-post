@@ -1,9 +1,42 @@
 import * as pulumi from "@pulumi/pulumi";
-import * as aws from "@pulumi/aws";
 import * as awsx from "@pulumi/awsx";
+import { DynamoDB } from "aws-sdk";
+import { getRecordHandler } from "../lambdas/getRecord";
+import { postRecordHandler } from "../lambdas/postRecord";
 
-// Create an AWS resource (S3 Bucket)
-const bucket = new aws.s3.Bucket("my-bucket");
+const env = pulumi.getStack().split('.')[1];
+const infraConfig = new pulumi.StackReference(`infrastructure.${env}`);
+const tableName = infraConfig.getOutput("tableName");
 
-// Export the name of the bucket
-export const bucketName = bucket.id;
+async function getRecord(event: awsx.apigateway.Request): Promise<awsx.apigateway.Response> {
+  const dbClient = new DynamoDB.DocumentClient();
+  const dbTableName = tableName.get();
+  return getRecordHandler(dbClient, dbTableName, event);
+}
+
+async function postRecord(event: awsx.apigateway.Request): Promise<awsx.apigateway.Response> {
+  const dbClient = new DynamoDB.DocumentClient();
+  const dbTableName = tableName.get();
+  return postRecordHandler(dbClient, dbTableName, event);
+}
+
+const apiGateway = new awsx.apigateway.API(
+  "pulumi-blog-post-api",
+  {
+    stageName: env,
+    routes: [
+      {
+        path: "points/get",
+        method: "GET",
+        eventHandler: getRecord
+      },
+      {
+        path: "raise",
+        method: "POST",
+        eventHandler: postRecord
+      }
+    ]
+  }
+);
+
+export const apiUrl = apiGateway.url;
